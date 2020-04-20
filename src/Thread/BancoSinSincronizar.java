@@ -1,5 +1,8 @@
 package Thread;
 
+import java.util.concurrent.locks.*;
+
+
 public class BancoSinSincronizar {
 //------------------CLASE MAIN-----------------------------
 	public static void main(String[] args) {
@@ -31,6 +34,8 @@ class Banco{
 	
 	//-----------------Metodo para transferencias
 	public void transferencia(int cuentaOrigen,int cuentaDestino,double cantidad) {
+		cierreBanco.lock();//Clase para bloquear que entren dos hilos a la vez instanciado en variables
+		try {
 		if(cuentas[cuentaOrigen]<cantidad) {//si cuenta tiene menos plata
 			
 			return;
@@ -45,7 +50,9 @@ class Banco{
 		cuentas[cuentaDestino]+=cantidad;// suma dinero a la cuenta destino
 	
 		System.out.printf("Saldo total: %10.2f%n",getSaldoTotal());	
-		
+		}finally {
+			cierreBanco.unlock();
+		}
 	}
 	
 	//-----------------Metodo dar saldo total
@@ -63,6 +70,7 @@ class Banco{
 	
 	//--------------------Variables
 	private final double [] cuentas; 
+	private Lock cierreBanco=new ReentrantLock();
 
 
 }
