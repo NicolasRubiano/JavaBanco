@@ -28,22 +28,18 @@ class Banco{
 		for(int i=0;i<cuentas.length;i++) {
 			cuentas[i]=2000;
 		}
-		saldoSuficiente=cierreBanco.newCondition();//Bloqueo se establece en base a una condicon
+	
 	
 	}
 	
 	//-----------------Metodo para transferencias
-	public void transferencia(int cuentaOrigen,int cuentaDestino,double cantidad) {
-		cierreBanco.lock();//Clase para bloquear que entren dos hilos a la vez instanciado en variables
-		try {
+	public synchronized void transferencia(int cuentaOrigen,int cuentaDestino,double cantidad) throws InterruptedException {
+		
+		
 			
 		while(cuentas[cuentaOrigen]<cantidad) {//si cuenta tiene menos plata
-			try {
-				saldoSuficiente.await();
-			} catch (InterruptedException e) {
-				
-				e.printStackTrace();
-			}
+			wait();
+			
 		}
 		
 		System.out.println(Thread.currentThread());//imprime el hilo
@@ -55,11 +51,9 @@ class Banco{
 		cuentas[cuentaDestino]+=cantidad;// suma dinero a la cuenta destino
 	
 		System.out.printf("Saldo total: %10.2f%n",getSaldoTotal());
+		notifyAll();
+	
 		
-		saldoSuficiente.signalAll();//Avisa al hilo que esta a la espera en el while que ya hizo una transferencia otro hilo
-		}finally {
-			cierreBanco.unlock();
-		}
 	}
 	
 	//-----------------Metodo dar saldo total
@@ -77,9 +71,7 @@ class Banco{
 	
 	//--------------------Variables
 	private final double [] cuentas; 
-	private Lock cierreBanco=new ReentrantLock();
-	private Condition saldoSuficiente; 
-
+	private int cuentaenespera;
 }
 
 
@@ -100,13 +92,14 @@ class EjecucionTransferencias implements Runnable{
 	
 	@Override
 	public void run() {
-	
+		
 		while(true) {
+			try {
 		int paraLaCuenta=(int)(100*Math.random());
 		double cantidad =(CantidadMax)*Math.random();
 		banco .transferencia(deLaCuenta, paraLaCuenta, cantidad);
 		
-		try {
+		
 			Thread.sleep((int)Math.random()*10);
 		} catch (InterruptedException e) {
 			// TODO Auto-generated catch block
