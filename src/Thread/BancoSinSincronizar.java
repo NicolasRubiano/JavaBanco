@@ -10,10 +10,9 @@ Banco b =new Banco();
 for(int i=0;i<100;i++) {
 	EjecucionTransferencias r =new EjecucionTransferencias(b,i,2000);
 	Thread t=new Thread(r);
+
 	t.start();
 }
-
-
 	}
 
 }
@@ -29,6 +28,7 @@ class Banco{
 		for(int i=0;i<cuentas.length;i++) {
 			cuentas[i]=2000;
 		}
+		saldoSuficiente=cierreBanco.newCondition();//Bloqueo se establece en base a una condicon
 	
 	}
 	
@@ -36,9 +36,14 @@ class Banco{
 	public void transferencia(int cuentaOrigen,int cuentaDestino,double cantidad) {
 		cierreBanco.lock();//Clase para bloquear que entren dos hilos a la vez instanciado en variables
 		try {
-		if(cuentas[cuentaOrigen]<cantidad) {//si cuenta tiene menos plata
 			
-			return;
+		while(cuentas[cuentaOrigen]<cantidad) {//si cuenta tiene menos plata
+			try {
+				saldoSuficiente.await();
+			} catch (InterruptedException e) {
+				
+				e.printStackTrace();
+			}
 		}
 		
 		System.out.println(Thread.currentThread());//imprime el hilo
@@ -49,7 +54,9 @@ class Banco{
 		
 		cuentas[cuentaDestino]+=cantidad;// suma dinero a la cuenta destino
 	
-		System.out.printf("Saldo total: %10.2f%n",getSaldoTotal());	
+		System.out.printf("Saldo total: %10.2f%n",getSaldoTotal());
+		
+		saldoSuficiente.signalAll();//Avisa al hilo que esta a la espera en el while que ya hizo una transferencia otro hilo
 		}finally {
 			cierreBanco.unlock();
 		}
@@ -66,12 +73,12 @@ class Banco{
 		}
 		
 		
-	
+	                                                                                                                                                                                                                                                                                                                                             	
 	
 	//--------------------Variables
 	private final double [] cuentas; 
 	private Lock cierreBanco=new ReentrantLock();
-
+	private Condition saldoSuficiente; 
 
 }
 
